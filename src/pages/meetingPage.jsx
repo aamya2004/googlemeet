@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Peer from "simple-peer";
 import { io } from "socket.io-client";
+const socket = io("http://localhost:9000"); // Rename to newSocket
 
 function MeetingPage() {
   const [me, setMe] = useState("");
@@ -12,33 +13,28 @@ function MeetingPage() {
   const [idToCall, setIdToCall] = useState("");
   const [callEnded, setCallEnded] = useState(false);
   const [name, setName] = useState("");
-  const [socket, setSocket] = useState(null);
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
 
   useEffect(() => {
-    const newSocket = io("http://localhost:9000"); // Rename to newSocket
-    setSocket(newSocket); // Set the socket using setSocket
     navigator.mediaDevices
-        .getUserMedia({ video: true, audio: true })
-        .then((currentStream) => {
-          setStream(currentStream);
-          console.log(currentStream);
-          myVideo.current.srcObject = currentStream;
-        });
+      .getUserMedia({ video: true, audio: true })
+      .then((currentStream) => {
+        setStream(currentStream);
+        myVideo.current.srcObject = currentStream;
+      });
     socket.on("me", (id) => {
       console.log(id);
       setMe(id);
     });
-    
+
     socket.on("callUser", (data) => {
       setReceivingCall(true);
       setCaller(data.from);
       setName(data.name);
       setCallerSignal(data.signal);
     });
-    //getUserStream();
   }, []);
 
   const callUser = (id) => {
@@ -47,8 +43,8 @@ function MeetingPage() {
       trickle: false,
       stream: stream,
     });
-    
-    if(socket){
+
+    if (socket) {
 
       peer.on("signal", (data) => {
         socket.emit("callUser", {
@@ -114,13 +110,13 @@ function MeetingPage() {
       <div className="container">
         <div className="video-container">
           <div className="video">
-              <video
-                playsInline
-                muted
-                ref={myVideo}
-                autoPlay
-                style={{ width: "300px" }}
-              />
+            <video
+              playsInline
+              muted
+              ref={myVideo}
+              autoPlay
+              style={{ width: "300px" }}
+            />
 
           </div>
           <div className="video">
