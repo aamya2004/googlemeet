@@ -1,9 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
+import { MdContentCopy } from "react-icons/md";
+import { useHistory } from "react-router-dom";
+import { RxCross2 } from "react-icons/rx";
+import CopyToClipboard from "react-copy-to-clipboard";
 import Peer from "simple-peer";
 import { io } from "socket.io-client";
 const socket = io("http://localhost:9000"); // Rename to newSocket
 
-function MeetingPage() {
+function MeetingPage({userStream}) {
   const [me, setMe] = useState("");
   const [stream, setStream] = useState(null);
   const [receivingCall, setReceivingCall] = useState(false);
@@ -13,6 +17,7 @@ function MeetingPage() {
   const [idToCall, setIdToCall] = useState("");
   const [callEnded, setCallEnded] = useState(false);
   const [name, setName] = useState("");
+  const [shown, setShown] = useState(false);
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
@@ -35,6 +40,7 @@ function MeetingPage() {
       setName(data.name);
       setCallerSignal(data.signal);
     });
+    setShown(true);
   }, []);
 
   const callUser = (id) => {
@@ -45,7 +51,6 @@ function MeetingPage() {
     });
 
     if (socket) {
-
       peer.on("signal", (data) => {
         socket.emit("callUser", {
           userToCall: id,
@@ -68,6 +73,8 @@ function MeetingPage() {
     });
 
     connectionRef.current = peer;
+
+ 
   };
 
   const answerCall = () => {
@@ -106,30 +113,71 @@ function MeetingPage() {
 
   return (
     <>
-      <h1 style={{ textAlign: "center", color: "#fff" }}>Zoomish</h1>
-      <div className="container">
+      <div className="container bg-black">
+        <div className="flex justify-center h-20">
+          {receivingCall && !callAccepted ? (
+            <div className="caller bg-white w-1/4 h-24 rounded-lg flex flex-col items-center p-2 justify-around fixed">
+              <h1>Someone wants to enter this meet?</h1>
+              <div className="flex">
+                <button onClick={answerCall} className="text-zinc-500 px-4 cursor-pointer">
+                  Admit
+                </button>
+                <button onClick={answerCall} className="text-zinc-500 px-4 cursor-pointer">
+                  Deny
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
         <div className="video-container">
-          <div className="video">
+          <div className="video flex justify-center p-5">
             <video
+              className="w-1/2 rounded-xl"
               playsInline
               muted
               ref={myVideo}
               autoPlay
-              style={{ width: "300px" }}
             />
-
           </div>
           <div className="video">
             {callAccepted && !callEnded ? (
-              <video
+              <video 
                 playsInline
                 ref={userVideo}
                 autoPlay
-                style={{ width: "300px" }}
+                style={{ width: "800px" }}
               />
             ) : null}
           </div>
         </div>
+
+        {shown ? (
+          <div className="fixed top-0 left-0 w-full h-full flex justify-start items-end  bg-black bg-opacity-50 z-50">
+            <div className="bg-slate-100 h-4/3 w-1/4 p-6 m-10 rounded shadow-md">
+              <div className="flex justify-between">
+                <h2 className="text-gray-800 font-medium text-lg">
+                  Your Meeting's ready
+                </h2>
+                <RxCross2
+                  className="h-5 w-5 cursor-pointer"
+                  onClick={() => setShown(false)}
+                />
+              </div>
+              <h3>Share this code with anyone you want in this meeting.</h3>
+              <div className="h-10 w-30 bg-zinc-300 mt-4 rounded-md flex items-center p-3 justify-between">
+                <h3>{me}</h3>
+                <CopyToClipboard text={me} style={{ marginBottom: "1rem" }}>
+                  <MdContentCopy className="cursor-pointer h-6 text-zinc-700 w-10 mt-4" />
+                </CopyToClipboard>
+              </div>
+              <h6 className="text-zinc-600 text-md">
+                People who use this code must get your permission before they
+                can join.
+              </h6>
+            </div>
+          </div>
+        ) : null}
+
         <div className="myId">
           <input
             type="text"
@@ -155,14 +203,6 @@ function MeetingPage() {
             )}
             {idToCall}
           </div>
-        </div>
-        <div>
-          {receivingCall && !callAccepted ? (
-            <div className="caller">
-              <h1>{name} is calling...</h1>
-              <button onClick={answerCall}>Answer</button>
-            </div>
-          ) : null}
         </div>
       </div>
     </>

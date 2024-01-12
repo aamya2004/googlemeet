@@ -1,8 +1,11 @@
+import { createServer } from "http";
 import { Server } from "socket.io";
 
+const httpServer = createServer();
 const io = new Server(process.env.PORT || 9000, {
   cors: true,
 });
+
 io.on("connection", (socket) => {
   socket.emit("me", socket.id);
 
@@ -26,3 +29,4 @@ io.on("connection", (socket) => {
     io.to(data.to).emit("callAccepted", data.signal);
   });
 });
+

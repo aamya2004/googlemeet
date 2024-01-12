@@ -2,17 +2,21 @@ import React, { useState } from "react";
 import { TbVideoPlus } from "react-icons/tb";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/header";
+import JoinRoom from "./joinRoom";
 const Home = () => {
   //const history = useHistory();
   const [idToJoin, setIdToJoin] = useState("");
+  const [userStream, setUserStream] = useState(null);
   const navigate = useNavigate();
   const handleOnClick = () => {
     navigate("/MeetingPage");
     // history.push('/newMeetingPage');
   };
-  // const JoinMeeting = (idToJoin) => {
-  //  navigate("/joinRoomPage" ,{state : {idToJoin}});
-  // }
+  const JoinMeeting = (idToJoin) => {
+    {idToJoin 
+      ? (navigate("/joinRoomPage" ,{state : {idToJoin}}))
+       :<></>}
+  }
 
   return (
     <>
@@ -42,10 +46,10 @@ const Home = () => {
               onChange={(e) => setIdToJoin(e.target.value)}
             ></input>
           </div>
-          {/* <button className="p-4 mt-9 text-lg font-normal text-zinc-400"
+          <button className="p-4 mt-9 text-lg font-normal text-zinc-400"
            onClick={() => JoinMeeting(idToJoin)}>
             Join
-          </button> */}
+          </button>
         </div>
       </div>
     </>
