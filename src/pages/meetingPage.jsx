@@ -5,9 +5,11 @@ import { RxCross2 } from "react-icons/rx";
 import CopyToClipboard from "react-copy-to-clipboard";
 import Peer from "simple-peer";
 import { io } from "socket.io-client";
+import { useSelector } from "react-redux";
+import { selectUserVideo } from "../store/slice";
 const socket = io("http://localhost:9000"); // Rename to newSocket
 
-function MeetingPage({userStream}) {
+function MeetingPage() {
   const [me, setMe] = useState("");
   const [stream, setStream] = useState(null);
   const [receivingCall, setReceivingCall] = useState(false);
@@ -18,9 +20,10 @@ function MeetingPage({userStream}) {
   const [callEnded, setCallEnded] = useState(false);
   const [name, setName] = useState("");
   const [shown, setShown] = useState(false);
-  const myVideo = useRef();
   const userVideo = useRef();
+  const myVideo = useRef();
   const connectionRef = useRef();
+  const userVideoFromStore = useSelector(selectUserVideo);
 
   useEffect(() => {
     navigator.mediaDevices
@@ -41,7 +44,17 @@ function MeetingPage({userStream}) {
       setCallerSignal(data.signal);
     });
     setShown(true);
+
   }, []);
+
+  // useEffect(() => {
+  //   // Set userVideo srcObject when userVideoFromStore changes
+  //   console.log("reached")
+  //   if (userVideoFromStore && userVideoFromStore.id) {
+  //     userVideo.current.srcObject = new MediaStream([{ id: userVideoFromStore.id }]);
+  //   }
+  // }, [userVideoFromStore]);
+
 
   const callUser = (id) => {
     const peer = new Peer({
@@ -61,11 +74,13 @@ function MeetingPage({userStream}) {
       });
     }
 
-    peer.on("stream", (currentStream) => {
-      if (userVideo.current) {
-        userVideo.current.srcObject = currentStream;
+    peer.on("stream", () => {
+      console.log("reached")
+      if (userVideoFromStore && userVideoFromStore.id) {
+        userVideo.current.srcObject = new MediaStream([{ id: userVideoFromStore.id }]);
       }
-    });
+    }
+    );
 
     socket.on("callAccepted", (signal) => {
       setCallAccepted(true);
@@ -90,9 +105,10 @@ function MeetingPage({userStream}) {
       socket.emit("answerCall", { signal: data, to: caller });
     });
 
-    peer.on("stream", (stream) => {
-      if (userVideo.current) {
-        userVideo.current.srcObject = stream;
+    peer.on("stream", () => {
+      console.log("reached")
+      if (userVideoFromStore && userVideoFromStore.id) {
+        userVideo.current.srcObject = new MediaStream([{ id: userVideoFromStore.id }]);
       }
     });
 

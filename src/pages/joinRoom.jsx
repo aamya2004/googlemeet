@@ -3,9 +3,12 @@ import { useLocation } from "react-router-dom";
 import Header from "../components/header";
 import Peer from "simple-peer";
 import {io} from "socket.io-client";
+import { useDispatch, useSelector } from "react-redux";
+import { addUserVideo, selectUserVideos } from '../store/slice';
 const socket = io("http://localhost:9000");
 
-const JoinRoom = ({setUserStream}) => {
+
+const JoinRoom = () => {
   const [me, setMe] = useState("");
   const [stream, setStream] = useState();
   const [receivingCall, setReceivingCall] = useState(false);
@@ -20,58 +23,60 @@ const JoinRoom = ({setUserStream}) => {
   const connectionRef = useRef();
   const location = useLocation();
   const idToJoin = location.state ? location.state.idToJoin : "";
+  const dispatch = useDispatch();  
 
   useEffect(() => {
     navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
-      .then((stream) => {
-        setStream(stream);
-        userVideo.current.srcObject = stream;
-      });
-
-    socket.on("me", (id) => {
-      console.log(id);
-      setMe(id);
-    });
-
-    socket.on("callUser", (data) => {
-      setReceivingCall(true);
-      setCaller(data.from);
-      console.log(data.from)
-      setName(data.name);
-      console.log(data.name)
-      setCallerSignal(data.signal);
-      console.log(data.signal)
-    });
-  }, []);
-
-  const callUser = (idToJoin) =>{
-    const peer = new Peer({
-      initiator: true,
-      trickle: false,
-      stream: stream
-    })
-    peer.on("signal", (data) => {
-      socket.emit("callUser",{
-        userToCall: idToJoin,
-        signalData: data,
-        from: me,
-        name: me
-      })
-
-    })
-    peer.on("stream",(stream)=>{
+    .getUserMedia({ video: true, audio: true })
+    .then((stream) => {
+      setStream(stream);
       userVideo.current.srcObject = stream;
-    })
-    socket.on("callAccepted", (signal) =>{
-      setCallAccepted(true)
-      peer.signal(signal)
-    })
-    connectionRef.current = peer
-  }
-
-  return (
-    <>
+      console.log(typeof(stream));
+      dispatch(addUserVideo({ id: stream.id, active: stream.active }));
+      })
+      .catch((error) => {
+        console.error('Error accessing user media:', error);
+      })
+      
+      socket.on("me", (id) => {
+        console.log(id);
+        setMe(id);
+      });
+      
+      socket.on("callUser", (data) => {
+        setReceivingCall(true);
+        setCaller(data.from);
+        console.log(data.from)
+        setName(data.name);
+        console.log(data.name)
+        setCallerSignal(data.signal);
+        console.log(data.signal)
+      });
+    }, []);
+    const callUser = (idToJoin) =>{
+      const peer = new Peer({
+        initiator: true,
+        trickle: false,
+        stream: stream
+      })
+      peer.on("signal", (data) => {
+        socket.emit("callUser",{
+          userToCall: idToJoin,
+          signalData: data,
+          from: me,
+          name: me
+        })
+        
+      })
+      socket.on("callAccepted", (signal) =>{
+        setCallAccepted(true)
+        peer.signal(signal)
+      })
+      connectionRef.current = peer
+    }
+    
+    return (
+      <>
       <Header />
       <div className="video-container flex items-center justify-around mt-20 align-middle">
 				<div className="video">
