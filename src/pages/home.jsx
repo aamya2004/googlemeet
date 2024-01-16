@@ -10,7 +10,6 @@ const Home = () => {
   const navigate = useNavigate();
   const handleOnClick = () => {
     navigate("/MeetingPage");
-    // history.push('/newMeetingPage');
   };
   const JoinMeeting = (idToJoin) => {
     {idToJoin 

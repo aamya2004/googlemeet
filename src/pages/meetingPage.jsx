@@ -7,6 +7,7 @@ import Peer from "simple-peer";
 import { io } from "socket.io-client";
 import { useSelector } from "react-redux";
 import { selectUserVideo } from "../store/slice";
+import { log } from "console";
 const socket = io("http://localhost:9000"); // Rename to newSocket
 
 function MeetingPage() {
@@ -23,7 +24,6 @@ function MeetingPage() {
   const userVideo = useRef();
   const myVideo = useRef();
   const connectionRef = useRef();
-  const userVideoFromStore = useSelector(selectUserVideo);
 
   useEffect(() => {
     navigator.mediaDevices
@@ -37,7 +37,8 @@ function MeetingPage() {
       setMe(id);
     });
 
-    socket.on("callUser", (data) => {
+    socket.on("userCalling", (data) => {
+      console.log("userCalling -> ", data);
       setReceivingCall(true);
       setCaller(data.from);
       setName(data.name);
@@ -47,52 +48,8 @@ function MeetingPage() {
 
   }, []);
 
-  // useEffect(() => {
-  //   // Set userVideo srcObject when userVideoFromStore changes
-  //   console.log("reached")
-  //   if (userVideoFromStore && userVideoFromStore.id) {
-  //     userVideo.current.srcObject = new MediaStream([{ id: userVideoFromStore.id }]);
-  //   }
-  // }, [userVideoFromStore]);
-
-
-  const callUser = (id) => {
-    const peer = new Peer({
-      initiator: true,
-      trickle: false,
-      stream: stream,
-    });
-
-    if (socket) {
-      peer.on("signal", (data) => {
-        socket.emit("callUser", {
-          userToCall: id,
-          signalData: data,
-          from: me,
-          name: name,
-        });
-      });
-    }
-
-    peer.on("stream", () => {
-      console.log("reached")
-      if (userVideoFromStore && userVideoFromStore.id) {
-        userVideo.current.srcObject = new MediaStream([{ id: userVideoFromStore.id }]);
-      }
-    }
-    );
-
-    socket.on("callAccepted", (signal) => {
-      setCallAccepted(true);
-      peer.signal(signal);
-    });
-
-    connectionRef.current = peer;
-
- 
-  };
-
   const answerCall = () => {
+
     setCallAccepted(true);
 
     const peer = new Peer({
@@ -102,23 +59,14 @@ function MeetingPage() {
     });
 
     peer.on("signal", (data) => {
-      socket.emit("answerCall", { signal: data, to: caller });
+      socket.emit("callAccepted", { signal: data, to: caller });
     });
 
-    peer.on("stream", () => {
-      console.log("reached")
-      if (userVideoFromStore && userVideoFromStore.id) {
-        userVideo.current.srcObject = new MediaStream([{ id: userVideoFromStore.id }]);
-      }
+    peer.on("stream", (stream) => {
+      userVideo.current.srcObject = stream;
     });
 
-    // Check if callerSignal is valid before calling peer.signal
-    if (callerSignal && peer.signal) {
-      peer.signal(callerSignal);
-    } else {
-      console.error("Invalid callerSignal or peer.signal is not available");
-    }
-
+    peer.signal(callerSignal);
     connectionRef.current = peer;
   };
 
@@ -157,7 +105,7 @@ function MeetingPage() {
           </div>
           <div className="video">
             {callAccepted && !callEnded ? (
-              <video 
+              <video
                 playsInline
                 ref={userVideo}
                 autoPlay
@@ -211,14 +159,6 @@ function MeetingPage() {
             value={idToCall}
             onChange={(e) => setIdToCall(e.target.value)}
           />
-          <div className="call-button">
-            {callAccepted && !callEnded ? (
-              <button onClick={leaveCall}>End Call</button>
-            ) : (
-              <button onClick={() => callUser(idToCall)}>Call</button>
-            )}
-            {idToCall}
-          </div>
         </div>
       </div>
     </>

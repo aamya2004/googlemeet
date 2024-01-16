@@ -14,19 +14,16 @@ io.on("connection", (socket) => {
   });
 
   socket.on("callUser", (data) => {
-    console.log("Call incoming");
-    
-    // Emit a 'callUser' event to the specific user identified by 'data.userToCall'
-    io.to(data.userToCall).emit("callUser", {
+    io.to(data.userToCall).emit("userCalling", {
       signal: data.signalData,
       from: data.from,
       name: data.name,
     });
   });
 
-  socket.on("answerCall", (data) => {
+  socket.on("callAccepted", (data) => {
     // Emit a 'callAccepted' event to the specific user identified by 'data.to'
-    io.to(data.to).emit("callAccepted", data.signal);
+    io.to(data.to).emit("callAcceptedTrue", data);
   });
 });
 
